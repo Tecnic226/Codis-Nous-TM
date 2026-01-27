@@ -1,0 +1,5 @@
+{
+  "name": "Codis Nous TM - Gestión Técnica",
+  "description": "Una aplicación avanzada de gestión para oficinas técnicas que permite registrar códigos internos, referencias de planos de clientes y órdenes de fabricación (OFs) con persistencia local y capacidades de exportación.",
+  "requestFramePermissions": []
+}
