@@ -23,7 +23,8 @@ import {
   ChevronDown,
   Info,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { Articulo, FormDataState } from './types';
 import { DEFAULT_CLIENTES } from './constants';
@@ -84,6 +85,15 @@ const App: React.FC = () => {
       a.codigoCliente.trim().toUpperCase() === refLimpia
     );
   }, [formData.codigoCliente, formData.clienteId, articulos, editingId]);
+
+  // Sincronizar Código Interno si el registro ya existe
+  useEffect(() => {
+    if (registroExistente && !editingId) {
+      setFormData(prev => ({ ...prev, codigoInterno: registroExistente.codigoInterno }));
+    } else if (!registroExistente && !editingId && formData.codigoInterno === (articulos.find(a => a.id === registroExistente?.id)?.codigoInterno || "")) {
+       // Opcional: limpiar si deja de coincidir y era el código del existente
+    }
+  }, [registroExistente, editingId]);
 
   const sugerirCodigo = () => {
     const articulosDelCliente = articulos.filter(a => a.clienteId === formData.clienteId);
@@ -317,8 +327,9 @@ const App: React.FC = () => {
                                 <>
                                   Este código ya existe en la base de datos (ID: <span className="font-black">{registroExistente.codigoInterno}</span>). 
                                   {registroExistente.ordenes.length > 0 && (
-                                    <span className="block mt-1 italic">Registrado en OFs: {registroExistente.ordenes.join(', ')}</span>
+                                    <span className="block mt-1 italic font-bold text-indigo-600">Registrado en: {registroExistente.ordenes.join(', ')}</span>
                                   )}
+                                  <span className="block mt-1 text-[10px] text-indigo-400 font-bold uppercase tracking-tight">Introduce solo la nueva OF abajo para vincularla.</span>
                                 </>
                               ) : (
                                 "Esta referencia no consta en el archivo maestro. Por favor, asigne una ID interna para crear el registro."
@@ -332,12 +343,25 @@ const App: React.FC = () => {
 
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-500 uppercase ml-3 tracking-[0.2em]">Código Interno TM</label>
-                    <div className="flex gap-3 items-center bg-white p-2 rounded-[2.2rem] shadow-sm border border-slate-200 focus-within:border-indigo-400 transition-colors">
-                      <input type="text" required placeholder="ID Interno..." value={formData.codigoInterno} onChange={(e) => setFormData({...formData, codigoInterno: e.target.value})} className="flex-1 p-4 bg-transparent text-sm font-mono font-bold outline-none uppercase placeholder:text-slate-300" />
-                      {!editingId && (
+                    <div className={`flex gap-3 items-center p-2 rounded-[2.2rem] shadow-sm border transition-all duration-300 ${registroExistente ? 'bg-slate-100 border-indigo-200' : 'bg-white border-slate-200 focus-within:border-indigo-400'}`}>
+                      <input 
+                        type="text" 
+                        required={!registroExistente} 
+                        disabled={!!registroExistente && !editingId}
+                        placeholder={registroExistente ? "ID Bloqueado (Detectado)" : "ID Interno..."} 
+                        value={formData.codigoInterno} 
+                        onChange={(e) => setFormData({...formData, codigoInterno: e.target.value})} 
+                        className={`flex-1 p-4 bg-transparent text-sm font-mono font-bold outline-none uppercase placeholder:text-slate-300 ${registroExistente ? 'text-indigo-500' : ''}`} 
+                      />
+                      {!editingId && !registroExistente && (
                         <button type="button" onClick={sugerirCodigo} className="p-4 bg-slate-100 text-slate-400 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all">
                           <RotateCcw size={18} />
                         </button>
+                      )}
+                      {registroExistente && !editingId && (
+                        <div className="p-4 text-indigo-400">
+                           <Lock size={18} />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -351,8 +375,8 @@ const App: React.FC = () => {
                 </div>
 
                 <button type="submit" disabled={loading} className={`w-full py-7 rounded-[2.5rem] font-black text-white shadow-2xl transition-all flex items-center justify-center gap-4 uppercase tracking-[0.3em] text-xs ${editingId ? 'bg-amber-500 hover:bg-amber-600' : (registroExistente ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-900 hover:bg-slate-800')} hover:-translate-y-1 active:scale-95`}>
-                  {loading ? <Loader2 className="animate-spin" size={22} /> : (editingId ? <Fingerprint size={22} /> : <PlusCircle size={22} />)}
-                  {editingId ? 'Confirmar' : (registroExistente ? 'Vincular' : 'Crear Registro')}
+                  {loading ? <Loader2 className="animate-spin" size={22} /> : (editingId ? <Fingerprint size={22} /> : (registroExistente ? <CheckCircle2 size={22} /> : <PlusCircle size={22} />))}
+                  {editingId ? 'Confirmar Edición' : (registroExistente ? 'Vincular nueva OF' : 'Crear Nuevo Registro')}
                 </button>
               </form>
             </div>
